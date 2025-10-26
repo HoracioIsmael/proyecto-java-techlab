@@ -117,7 +117,7 @@ public class Main {
                     break;
             }
 
-            productoService.agregarProducto(nuevoProducto); // [cite: 131]
+            productoService.agregarProducto(nuevoProducto);
 
         } catch (IllegalArgumentException e) {
             System.out.println("Error al crear producto: " + e.getMessage());
@@ -257,7 +257,7 @@ public class Main {
     // --- Métodos de utilidad para Scanner ---
 
     /**
-     * Lee un entero de forma segura, manejando NumberFormatException[cite: 113].
+     * Lee un entero de forma segura, manejando NumberFormatException.
      */
     private static int leerEntero(String mensaje) {
         while (true) {
@@ -272,7 +272,7 @@ public class Main {
     }
 
     /**
-     * Lee un double de forma segura, manejando NumberFormatException[cite: 113].
+     * Lee un double de forma segura, manejando NumberFormatException.
      */
     private static double leerDouble(String mensaje) {
         while (true) {
