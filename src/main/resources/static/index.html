@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechLab Store - Final</title>
+    <!-- Usamos una fuente moderna para la estética profesional -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS Y ESTILOS --- */
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937;
+            --danger: #ef4444; --success: #10b981;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-top: 80px; }
+
+        /* NAVBAR */
+        nav { position: fixed; top: 0; width: 100%; background: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box;}
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+        .menu a { margin-left: 1.5rem; text-decoration: none; color: #4b5563; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .menu a:hover, .menu a.active { color: var(--primary); }
+        .badge { background: var(--secondary); color: white; padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; vertical-align: top; }
+
+        /* LAYOUT */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .section { display: none; animation: fadeUp 0.4s ease; }
+        .section.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CONTROLES DE BUSQUEDA/FILTRO */
+        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .search-bar { flex-grow: 1; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; }
+        .filter-btn { padding: 0.5rem 1rem; border: 1px solid var(--primary); background: transparent; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .filter-btn.active, .filter-btn:hover { background: var(--primary); color: white; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;}
+
+        /* PRODUCTOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; }
+        .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 180px; object-fit: cover; }
+        .card-body { padding: 1.25rem; flex-grow: 1; display: flex; flex-direction: column; }
+        .card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+        .price { font-size: 1.25rem; font-weight: 700; color: var(--primary-dark); margin-top: auto; }
+        .btn { background: var(--primary); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 1rem; font-weight: 600; transition: 0.2s; }
+        .btn:hover { background: var(--primary-dark); }
+
+        /* ADMIN TABLE */
+        table { width: 100%; background: white; border-radius: 12px; border-collapse: collapse; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #f3f4f6; }
+        th { background: #f9fafb; font-weight: 600; color: #4b5563; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-right: 0.5rem; width: auto; display: inline-block; }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: #f59e0b; }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.open { display: flex; }
+        .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+        .form-group input, .form-group textarea { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+        .status-error { background: #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;}
+        .status-success { background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;}
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+    <div class="logo">🚀 TechLab</div>
+    <div class="menu">
+        <a onclick="nav('home', event)" class="active">Catálogo</a>
+        <a onclick="nav('cart', event)">Carrito <span id="badge" class="badge">0</span></a>
+        <a onclick="nav('orders', event)">Mis Pedidos</a>
+        <a onclick="nav('admin', event)">Admin</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- SECCIÓN: CATÁLOGO -->
+    <div id="home" class="section active">
+        <h2 style="margin-bottom: 1rem;">Catálogo de Productos</h2>
+        <div class="controls">
+            <input type="text" id="search" class="search-bar" onkeyup="filterProducts()" placeholder="🔍 Buscar por nombre o descripción">
+            <div class="filter-bar" id="category-filters">
+                <button class="filter-btn active" data-category="all" onclick="filterProducts(this, 'all')">Todos</button>
+            </div>
+        </div>
+        <div id="products-grid" class="grid"></div>
+        <p id="no-results" style="display:none; text-align: center; margin-top: 50px; font-size: 1.1rem; color: #6b7280;">No se encontraron productos.</p>
+    </div>
+
+    <!-- SECCIÓN: CARRITO -->
+    <div id="cart" class="section">
+        <h2>Tu Carrito</h2>
+        <div id="cart-items"></div>
+        <div id="cart-actions" style="margin-top: 2rem; text-align: right;">
+            <button class="btn" style="width: auto; padding: 1rem 3rem;" onclick="confirmarPedido()">✅ Confirmar Compra</button>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: PEDIDOS -->
+    <div id="orders" class="section">
+        <h2>Historial de Pedidos</h2>
+        <table id="orders-table">
+            <thead><tr><th>ID Pedido</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Items</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- SECCIÓN: ADMIN -->
+    <div id="admin" class="section">
+        <h2>Gestión de Inventario</h2>
+        <div class="form-container" style="margin-bottom: 3rem;">
+            <h3>Crear Nuevo Producto</h3>
+            <form id="create-product-form" onsubmit="crearProducto(event)">
+                <div class="form-group"><label>Nombre</label><input type="text" id="cp-nombre" required></div>
+                <div class="form-group"><label>Descripción</label><input type="text" id="cp-desc" required></div>
+                <div class="form-group"><label>Precio</label><input type="number" id="cp-precio" step="0.01" required></div>
+                <div class="form-group"><label>Categoría</label><input type="text" id="cp-cat" placeholder="Ej: Bebida" required></div>
+                <div class="form-group"><label>Stock</label><input type="number" id="cp-stock" required></div>
+                <div class="form-group"><label>URL Imagen</label><input type="url" id="cp-img" placeholder="https://..." required></div>
+                <button type="submit" class="btn">Guardar Producto</button>
+            </form>
+        </div>
+
+        <h3>Inventario (Editar/Eliminar)</h3>
+        <table id="admin-table">
+            <thead><tr><th>ID</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- MODAL DE EDICIÓN -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <h3>Editar Producto: <span id="edit-product-name"></span></h3>
+        <form id="edit-form" onsubmit="guardarEdicion(event)">
+            <input type="hidden" id="edit-id">
+            <div class="form-group"><label>Nombre</label><input type="text" id="edit-nombre" required></div>
+            <div class="form-group"><label>Precio</label><input type="number" id="edit-precio" step="0.01" required></div>
+            <div class="form-group"><label>Stock</label><input type="number" id="edit-stock" required></div>
+            <div class="form-group"><label>Categoría</label><input type="text" id="edit-cat" required></div>
+            <div class="form-group"><label>URL Imagen</label><input type="url" id="edit-img" required></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-sm filter-btn" onclick="document.getElementById('edit-modal').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-sm btn">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- ESTADO Y CONFIGURACIÓN ---
+    const API_URL = "http://localhost:8080/api";
+    let carrito = [];
+    let productosCache = []; // Almacena todos los productos cargados
+    let categorias = new Set();
+
+    // --- INICIO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarProductos(true); // Cargar al inicio
+        nav('home');
+    });
+
+    // --- NAVEGACIÓN Y VISTAS ---
+    function nav(id, event = null) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+
+        document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
+        if (event) event.target.classList.add('active');
+
+        // Ejecutar carga de datos al cambiar de sección
+        if (id === 'cart') renderizarCarrito();
+        if (id === 'admin') renderizarAdminTable();
+        if (id === 'orders') cargarPedidos();
+        if (id === 'home') filterProducts(); // Recarga y aplica filtros
+    }
+
+    // --- UTILS ---
+    function formatPrice(price) {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price);
+    }
+
+    function showStatus(message, type = 'success') {
+        alert(message);
+    }
+
+    // --- 1. LÓGICA DE PRODUCTOS (CRUD) ---
+
+    async function cargarProductos(initialLoad = false) {
+        try {
+            const res = await fetch(`${API_URL}/productos`);
+            if (!res.ok) throw new Error("Error al cargar productos.");
+            productosCache = await res.json();
+
+            // Si es la carga inicial, generamos los botones de filtro
+            if (initialLoad) generarFiltros();
+
+            filterProducts(); // Muestra los productos filtrados (o todos)
+        } catch (e) {
+            console.error("Error al conectar con el backend.", e);
+            document.getElementById('products-grid').innerHTML = '<p class="status-error">Error al conectar con el Backend. Revise si Spring Boot está corriendo en 8080.</p>';
+            productosCache = [];
+        }
+    }
+
+    function generarFiltros() {
+        const filterBar = document.getElementById('category-filters');
+        filterBar.innerHTML = '<button class="filter-btn active" data-category="all" onclick="filterProducts(this, \'all\')">Todos</button>';
+
+        categorias = new Set(productosCache.map(p => p.categoria));
+        categorias.forEach(cat => {
+            if (cat) { // Evita categorías nulas
+                filterBar.innerHTML += `<button class="filter-btn" data-category="${cat}" onclick="filterProducts(this, '${cat}')">${cat}</button>`;
+            }
+        });
+    }
+
+    function filterProducts(activeBtn = null, category = document.querySelector('.filter-btn.active').dataset.category) {
+        const searchTerm = document.getElementById('search').value.toLowerCase();
+        const grid = document.getElementById('products-grid');
+        let filteredProducts = productosCache;
+
+        // 1. Aplicar filtro de categoría
+        if (activeBtn) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            activeBtn.classList.add('active');
+        }
+        if (category !== 'all') {
+            filteredProducts = filteredProducts.filter(p => p.categoria === category);
+        }
+
+        // 2. Aplicar filtro de búsqueda por texto
+        if (searchTerm) {
+            filteredProducts = filteredProducts.filter(p =>
+                p.nombre.toLowerCase().includes(searchTerm) ||
+                p.descripcion.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        grid.innerHTML = filteredProducts.map(p => `
+            <div class="card">
+                <img src="${p.imagenUrl}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/300'">
+                <div class="card-body">
+                    <small style="color:#6b7280">${p.categoria} | Stock: ${p.stock}</small>
+                    <h3>${p.nombre}</h3>
+                    <p style="font-size:0.9rem">${p.descripcion.substring(0, 50)}...</p>
+                    <div class="price">${formatPrice(p.precio)}</div>
+                    <button class="btn" onclick="agregarAlCarrito(${p.id}, '${p.nombre}', ${p.precio})">Agregar</button>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('no-results').style.display = filteredProducts.length === 0 ? 'block' : 'none';
+    }
+
+    async function crearProducto(e) {
+        e.preventDefault();
+        const producto = {
+            nombre: document.getElementById('cp-nombre').value,
+            descripcion: document.getElementById('cp-desc').value,
+            precio: parseFloat(document.getElementById('cp-precio').value),
+            categoria: document.getElementById('cp-cat').value,
+            stock: parseInt(document.getElementById('cp-stock').value),
+            imagenUrl: document.getElementById('cp-img').value
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/productos`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(producto)
+            });
+            if(res.ok) {
+                showStatus("✅ Producto creado exitosamente.");
+                e.target.reset();
+                cargarProductos(true); // Recargar todo
+            } else {
+                alert("Error al crear producto. Revise el log.");
+            }
+        } catch(error) { showStatus("Error de conexión al guardar.", 'error'); }
+    }
+
+    // --- 2. LÓGICA DE CARRITO Y PEDIDOS ---
+
+    function agregarAlCarrito(id, nombre, precio) {
+        const stockDisponible = productosCache.find(p => p.id === id).stock;
+
+        const existente = carrito.find(item => item.productoId === id);
+
+        if (existente) {
+            if (existente.cantidad < stockDisponible) {
+                existente.cantidad++;
+            } else {
+                alert(`Límite de stock alcanzado (${stockDisponible} unidades).`);
+                return;
+            }
+        } else {
+            carrito.push({ productoId: id, nombre: nombre, precio: precio, cantidad: 1 });
+        }
+        actualizarBadge();
+        showStatus(`Añadido: ${nombre}`);
+    }
+
+    function actualizarBadge() {
+        const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        document.getElementById('badge').innerText = totalItems;
+    }
+
+    function renderizarCarrito() {
+        const container = document.getElementById('cart-items');
+        if (carrito.length === 0) {
+            container.innerHTML = "<p>Tu carrito está vacío 😢</p>";
+            document.getElementById('cart-actions').style.display = 'none';
+            return;
+        }
+
+        let html = `<table><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead><tbody>`;
+        let total = 0;
+
+        carrito.forEach((item, index) => {
+            const subtotal = item.cantidad * item.precio;
+            total += subtotal;
+            html += `
+                <tr>
+                    <td>${item.nombre}</td>
+                    <td>${item.cantidad}</td>
+                    <td>${formatPrice(item.precio)}</td>
+                    <td>${formatPrice(subtotal)}</td>
+                    <td class="delete-btn" onclick="eliminarDelCarrito(${index})">🗑️</td>
+                </tr>
+            `;
+        });
+
+        html += `<tr><td colspan="3" class="total-row">TOTAL</td><td class="total-row">${formatPrice(total)}</td><td></td></tr></tbody></table>`;
+        container.innerHTML = html;
+        document.getElementById('cart-actions').style.display = 'block';
+    }
+
+    function eliminarDelCarrito(index) {
+        if(!confirm("¿Quitar producto del carrito?")) return;
+        carrito.splice(index, 1);
+        renderizarCarrito();
+        actualizarBadge();
+    }
+
+    async function confirmarPedido() {
+        if(!confirm("¿Confirmar compra y descontar stock?")) return;
+
+        // Formato para el Backend: [{ "producto": { "id": 1 }, "cantidad": 2 }, ...]
+        const itemsParaBackend = carrito.map(item => ({
+            producto: { id: item.productoId },
+            cantidad: item.cantidad
+        }));
+
+        try {
+            const res = await fetch(`${API_URL}/pedidos`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(itemsParaBackend)
+            });
+
+            if (res.ok) {
+                const pedido = await res.json();
+                showStatus(`¡Pedido #${pedido.id} confirmado con éxito! 🚀`);
+                carrito = [];
+                actualizarBadge();
+                cargarProductos(true); // Recargar stock actualizado
+                nav('orders'); // Ir al historial
+            } else {
+                const errorTxt = await res.text();
+                // Manejo de StockInsuficienteException del backend
+                showStatus(`❌ Error al procesar: ${errorTxt}`, 'error');
+            }
+        } catch (e) { showStatus("Error de conexión al servidor.", 'error'); }
+    }
+
+    async function cargarPedidos() {
+        try {
+            const res = await fetch(`${API_URL}/pedidos`);
+            const pedidos = await res.json();
+
+            const tbody = document.querySelector('#orders-table tbody');
+            tbody.innerHTML = pedidos.map(p => `
+                <tr>
+                    <td>#${p.id}</td>
+                    <td>${new Date(p.fecha).toLocaleString()}</td>
+                    <td><span style="color:${p.estado === 'CONFIRMADO' ? 'var(--success)' : '#f59e0b'}; font-weight:700;">${p.estado}</span></td>
+                    <td>${formatPrice(p.total)}</td>
+                    <td>${p.items.length} items</td>
+                </tr>
+            `).join('');
+        } catch(e) { showStatus("No se pudo cargar el historial de pedidos.", 'error'); }
+    }
+
+    // --- 3. LÓGICA DE ADMINISTRACIÓN (CRUD Completo) ---
+
+    function renderizarAdminTable() {
+        const tbody = document.querySelector('#admin-table tbody');
+        tbody.innerHTML = productosCache.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td>${p.nombre}</td>
+                <td>${p.stock}</td>
+                <td>${formatPrice(p.precio)}</td>
+                <td>
+                    <button class="btn-sm btn-warning" onclick="abrirModalEdicion(${p.id})">Editar</button>
+                    <button class="btn-sm btn-danger" onclick="eliminarProducto(${p.id}, '${p.nombre}')">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function abrirModalEdicion(id) {
+        const p = productosCache.find(p => p.id === id);
+        if (!p) return;
+
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('edit-product-name').innerText = p.nombre;
+        document.getElementById('edit-nombre').value = p.nombre;
+        document.getElementById('edit-precio').value = p.precio;
+        document.getElementById('edit-stock').value = p.stock;
+        document.getElementById('edit-cat').value = p.categoria;
+        document.getElementById('edit-img').value = p.imagenUrl;
+
+        document.getElementById('edit-modal').classList.add('open');
+    }
+
+    async function guardarEdicion(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-id').value;
+        const productoActualizado = {
+            id: parseInt(id),
+            nombre: document.getElementById('edit-nombre').value,
+            precio: parseFloat(document.getElementById('edit-precio').value),
+            stock: parseInt(document.getElementById('edit-stock').value),
+            categoria: document.getElementById('edit-cat').value,
+            imagenUrl: document.getElementById('edit-img').value,
+            descripcion: productosCache.find(p => p.id == id).descripcion // Mantenemos la descripción
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/productos/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(productoActualizado)
+            });
+
+            if (res.ok) {
+                showStatus(`✅ Producto #${id} actualizado.`, 'success');
+                document.getElementById('edit-modal').classList.remove('open');
+                cargarProductos(true); // Recargar datos
+            } else {
+                showStatus(`❌ Error al actualizar.`, 'error');
+            }
+        } catch(e) { showStatus("Error de conexión al actualizar.", 'error'); }
+    }
+
+    async function eliminarProducto(id, nombre) {
+        if (!confirm(`¿Estás seguro de eliminar ${nombre} (ID: ${id})?`)) return;
+
+        try {
+            const res = await fetch(`${API_URL}/productos/${id}`, { method: 'DELETE' });
+
+            if (res.ok) {
+                showStatus(`🗑️ Producto ${nombre} eliminado.`, 'success');
+                cargarProductos(true); // Recargar datos
+            } else {
+                showStatus(`❌ Error al eliminar el producto.`, 'error');
+            }
+        } catch(e) { showStatus("Error de conexión al eliminar.", 'error'); }
+    }
+</script>
+<!-- MODAL DE EDICIÓN -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <h3>Editar Producto: <span id="edit-product-name"></span></h3>
+        <form id="edit-form" onsubmit="guardarEdicion(event)">
+            <input type="hidden" id="edit-id">
+            <div class="form-group"><label>Nombre</label><input type="text" id="edit-nombre" required></div>
+            <div class="form-group"><label>Precio</label><input type="number" id="edit-precio" step="0.01" required></div>
+            <div class="form-group"><label>Stock</label><input type="number" id="edit-stock" required></div>
+            <div class="form-group"><label>Categoría</label><input type="text" id="edit-cat" required></div>
+            <div class="form-group"><label>URL Imagen</label><input type="url" id="edit-img" required></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-sm filter-btn" onclick="document.getElementById('edit-modal').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-sm btn">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
